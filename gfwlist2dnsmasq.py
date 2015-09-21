@@ -12,10 +12,17 @@ import os
 import datetime
 import base64
 import shutil
- 
-mydnsip = '127.0.0.1'
-mydnsport = '5353'
-ipsetname = 'gfwlist'
+import sys
+
+if len(sys.argv) <>5 and len(sys.argv) <> 3:
+	print "usage:\n\tpython",sys.argv[0],"<ipset_name> <output_file_name> <dns_ip> <dns_port>"
+	exit()
+argc_is_5 = 0
+if len(sys.argv) ==5 :
+	mydnsip = sys.argv[3]
+	mydnsport = sys.argv[4]
+	argc_is_5 = 1 
+ipsetname = sys.argv[1]
 # Extra Domain;
 EX_DOMAIN=[ \
 '.google.com', \
@@ -41,7 +48,7 @@ comment_pattern = '^\!|\[|^@@|^\d+\.\d+\.\d+\.\d+'
 domain_pattern = '([\w\-\_]+\.[\w\.\-\_]+)[\/\*]*' 
 tmpfile = '/tmp/gfwlisttmp'
 # do not write to router internal flash directly
-outfile = './dnsmasq_list.conf'
+outfile = sys.argv[2]
 #outfile = './dnsmasq_list.conf'
  
 fs =  file(outfile, 'w')
@@ -66,7 +73,8 @@ domainlist = []
  
 for line in tfs.readlines():	
 	if re.findall(comment_pattern, line):
-		print 'this is a comment line: ' + line
+		pass
+		#print 'this is a comment line: ' + line
 		#fs.write('#' + line)
 	else:
 		domain = re.findall(domain_pattern, line)
@@ -77,7 +85,8 @@ for line in tfs.readlines():
 			except ValueError:
 				print 'saving ' + domain[0]
 				domainlist.append(domain[0])
-				fs.write('server=/.%s/%s#%s\n'%(domain[0],mydnsip,mydnsport))
+				if argc_is_5 :
+					fs.write('server=/.%s/%s#%s\n'%(domain[0],mydnsip,mydnsport))
 				fs.write('ipset=/.%s/%s\n'%(domain[0],ipsetname))
 		else:
 			print 'no valid domain in this line: ' + line
@@ -85,7 +94,8 @@ for line in tfs.readlines():
 tfs.close()	
 
 for each in EX_DOMAIN:
-	fs.write('server=/%s/%s#%s\n'%(each,mydnsip,mydnsport))
+	if argc_is_5 :
+		fs.write('server=/%s/%s#%s\n'%(each,mydnsip,mydnsport))
 	fs.write('ipset=/%s/%s\n'%(each,ipsetname))
 
 print 'write extra domain done'
